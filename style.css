@@ -82,6 +82,31 @@ h1 { font-size: 17px; font-weight: 700; line-height: 1.25; }
   margin-bottom: 7px;
 }
 
+.label-row-end {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.count-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #888;
+}
+
+.count-select {
+  width: 44px;
+  padding: 2px 4px;
+  font-size: 11px;
+  border: 1.5px solid #ddd;
+  border-radius: 5px;
+  background: none;
+  color: #555;
+  cursor: pointer;
+}
+
 .control-label {
   display: block;
   font-size: 10px;

@@ -34,7 +34,13 @@
     <div class="control-group">
       <div class="control-label-row">
         <label class="control-label" for="type-select" data-i18n="typeLabel">Container type</label>
-        <button class="clear-btn-inline" onclick="clearAll()" data-i18n="clearBtn">Wissen</button>
+        <div class="label-row-end">
+          <label class="count-label" for="count-select" data-i18n="countLabel">Aantal</label>
+          <select id="count-select" class="count-select" onchange="setTopN(this.value)">
+            <option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option>
+          </select>
+          <button class="clear-btn-inline" onclick="clearAll()" data-i18n="clearBtn">Wissen</button>
+        </div>
       </div>
       <select id="type-select">
         <option value="">— Alle types tonen —</option>
@@ -61,7 +67,7 @@
 
     <div id="results-panel" class="results-panel" hidden>
       <div class="results-header">
-        <span data-i18n="resultsHeader">3 dichtstbijzijnde containers</span>
+        <span id="results-count-header" data-i18n="resultsHeader">3 dichtstbijzijnde containers</span>
       </div>
       <div id="results-list"></div>
     </div>

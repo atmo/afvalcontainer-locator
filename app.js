@@ -23,9 +23,9 @@ const FRACTIONS = {
   '5': { color: '#ca6f1e', nameKey: 'fractionTextiel',  emoji: '👕'  },
 };
 
-// Colors for the 3 routes (solid, dashed, dotted)
-const ROUTE_COLORS   = ['#c0392b', '#7d3c98', '#148f77'];
-const ROUTE_OFFSETS  = [-6, 0, 6];  // lateral pixel offsets for overlapping routes
+// Colors and offsets for up to 5 routes
+const ROUTE_COLORS   = ['#c0392b', '#7d3c98', '#148f77', '#d4ac0d', '#2471a3'];
+const ROUTE_OFFSETS  = [-8, -4, 0, 4, 8];  // lateral pixel offsets for overlapping routes
 
 // ============================================================
 // App-specific i18n helpers  (t / currentLang / applyTranslations / setLang
@@ -60,6 +60,7 @@ let selectedType       = '';   // fractie_code filter, '' = all shown
 let selectedPoint      = null; // { lat, lng }
 let selectedContainerId = null; // id of the container used as start point, or null
 let mode               = 'container'; // 'point' | 'container'
+let topN               = 3;    // number of nearest candidates to show
 
 let startMarker      = null;
 let nearestMarkers   = [];
@@ -495,7 +496,7 @@ function findAndShowNearest() {
       seenIds.add(c.id);
       return true;
     })
-    .slice(0, 3);
+    .slice(0, topN);
 
   clearRouteVisuals();
   fetchRoutesAndRender(nearest);
@@ -726,7 +727,8 @@ async function fetchRoutesAndRender(containers) {
   });
 
   document.getElementById('results-panel').hidden = false;
-  updateInstruction(t('instrFound', { name: fn(frac).toLowerCase() }));
+  document.getElementById('results-count-header').textContent = t('resultsHeader', { n: topN });
+  updateInstruction(t('instrFound', { n: topN, name: fn(frac).toLowerCase() }));
 
   // Update print metadata
   document.getElementById('print-type').textContent = fn(frac);
@@ -846,6 +848,11 @@ window.clearAll = function () {
   document.getElementById('results-list').innerHTML = '';
   document.getElementById('print-results').innerHTML = '';
   updateInstruction();
+};
+
+window.setTopN = function (n) {
+  topN = Math.min(5, Math.max(1, +n));
+  if (selectedPoint && selectedType) findAndShowNearest();
 };
 
 // ============================================================
