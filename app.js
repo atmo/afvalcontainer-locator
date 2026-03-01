@@ -4,9 +4,14 @@
 // Config
 // ============================================================
 
-const ORS_KEY   = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjcyN2U3ZmQ0NDNhMzQwNTQ5N2FjNGY1MjZmODA1M2IxIiwiaCI6Im11cm11cjY0In0=';
-const ORS_BASE  = 'https://api.openrouteservice.org/v2/directions/foot-walking';
-const OSRM_BASE = 'https://routing.openstreetmap.de/routed-foot/route/v1/foot/';
+const ORS_KEY    = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjcyN2U3ZmQ0NDNhMzQwNTQ5N2FjNGY1MjZmODA1M2IxIiwiaCI6Im11cm11cjY0In0=';
+const ORS_BASE   = 'https://api.openrouteservice.org/v2/directions/foot-walking';
+const ORS_MATRIX = 'https://api.openrouteservice.org/v2/matrix/foot-walking';
+const OSRM_BASE  = 'https://routing.openstreetmap.de/routed-foot/route/v1/foot/';
+
+// Haversine pre-filter pool size for ORS matrix reordering.
+// Wide enough so containers just across a canal are always included.
+const PRE_FILTER_N = 50;
 
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -44,6 +49,14 @@ function populateCitySelect() {
   sel.value = currentAdapter.id;
 }
 
+/** Updates the sidebar data-credit text from the current adapter. */
+function updateDataCredit() {
+  const el = document.querySelector('[data-i18n-html="dataCredit"]');
+  if (!el) return;
+  const credit = currentAdapter.dataCredit;
+  if (credit) el.innerHTML = credit[currentLang] || credit.en;
+}
+
 /** Re-populates the type <select> based on the current adapter's fractions. */
 function populateTypeSelect() {
   const sel = document.getElementById('type-select');
@@ -59,6 +72,7 @@ function populateTypeSelect() {
 document.addEventListener('langchange', () => {
   populateCitySelect();
   populateTypeSelect();
+  updateDataCredit();
   updateInstruction();
 });
 
@@ -327,17 +341,19 @@ function buildContainerMarker(container) {
         <strong>${frac.emoji} ${fn(frac)}</strong>
         <button class="popup-clear-btn" title="${t('clearBtn')}">×</button>
       </div>
-      <div class="popup-address" style="color:#555;margin-top:2px">${t('addressLoading')}</div>
+      <div class="popup-address" style="color:#555;margin-top:2px">${container.loc || t('addressLoading')}</div>
     `;
     div.querySelector('.popup-clear-btn').addEventListener('click', e => {
       L.DomEvent.stopPropagation(e);
       marker.closePopup();
       clearAll();
     });
-    reverseGeocode(container.lat, container.lng).then(addr => {
-      const el = div.querySelector('.popup-address');
-      if (el) el.textContent = addr || '—';
-    });
+    if (!container.loc) {
+      reverseGeocode(container.lat, container.lng).then(addr => {
+        const el = div.querySelector('.popup-address');
+        if (el) el.textContent = addr || '—';
+      });
+    }
     return div;
   }, { closeButton: false });
 
@@ -457,7 +473,7 @@ function setStartPoint(lat, lng, containerId = null) {
 // Find nearest
 // ============================================================
 
-function findAndShowNearest() {
+async function findAndShowNearest() {
   if (!selectedPoint || !selectedType) return;
 
   const candidates = allContainers.filter(
@@ -469,18 +485,48 @@ function findAndShowNearest() {
     return;
   }
 
+  // ── 1. Haversine pre-filter — wide pool to buffer for water / road detours ──
   const seenIds = new Set();
-  const nearest = candidates
+  const preFiltered = candidates
     .map(c => ({ ...c, distM: haversine(selectedPoint.lat, selectedPoint.lng, c.lat, c.lng) }))
-    .filter(c => c.id !== selectedContainerId)  // exclude the source container by ID
+    .filter(c => c.id !== selectedContainerId)
     .sort((a, b) => a.distM - b.distM)
     .filter(c => {
-      // Deduplicate by container ID (guard against duplicate entries in API data)
       if (seenIds.has(c.id)) return false;
       seenIds.add(c.id);
       return true;
     })
-    .slice(0, topN);
+    .slice(0, PRE_FILTER_N);
+
+  updateInstruction(t('instrCalculating'));
+
+  // ── 2. ORS Matrix → reorder by actual walking duration ────────────────────
+  let nearest;
+  if (ORS_KEY && preFiltered.length > topN) {
+    try {
+      const locations = [
+        [selectedPoint.lng, selectedPoint.lat],
+        ...preFiltered.map(c => [c.lng, c.lat]),
+      ];
+      const resp = await fetch(ORS_MATRIX, {
+        method:  'POST',
+        headers: { 'Authorization': ORS_KEY, 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ locations, sources: [0], metrics: ['duration'] }),
+      });
+      if (!resp.ok) throw new Error(`ORS matrix HTTP ${resp.status}`);
+      const { durations } = await resp.json();
+      // durations[0][0] = self (skip index 0); durations[0][i+1] = to preFiltered[i]
+      nearest = preFiltered
+        .map((c, i) => ({ ...c, walkDuration: durations[0][i + 1] ?? Infinity }))
+        .sort((a, b) => a.walkDuration - b.walkDuration)
+        .slice(0, topN);
+    } catch (err) {
+      console.warn('ORS matrix failed, falling back to haversine order:', err.message);
+      nearest = preFiltered.slice(0, topN);
+    }
+  } else {
+    nearest = preFiltered.slice(0, topN);
+  }
 
   clearRouteVisuals();
   fetchRoutesAndRender(nearest);
@@ -630,8 +676,13 @@ async function fetchRoutesAndRender(containers) {
   printResults.innerHTML = '';
   document.getElementById('results-panel').hidden = true;
 
-  // Start address fetches immediately in parallel with routes
-  const addressPromises = containers.map(c => reverseGeocode(c.lat, c.lng));
+  // Start address fetches — use bundled address if available, else reverse-geocode.
+  // Warn once if any container falls back to geocoding (e.g. location join failed).
+  const needsGeocode = containers.some(c => !c.loc);
+  if (needsGeocode) showToast(t('toastGeocodeFallback'));
+  const addressPromises = containers.map(c =>
+    c.loc ? Promise.resolve(c.loc) : reverseGeocode(c.lat, c.lng)
+  );
 
   const routes = await Promise.all(
     containers.map(c => fetchRoute(selectedPoint.lat, selectedPoint.lng, c.lat, c.lng))
@@ -695,7 +746,7 @@ async function fetchRoutesAndRender(containers) {
             <span>🚶 ${distStr}</span>
             <span>${t('walkTime', { min: mins })}</span>
           </div>
-          <div class="result-address" id="result-addr-${i}"><span class="text-shimmer">${t('addressLoading')}</span></div>
+          <div class="result-address" id="result-addr-${i}">${container.loc ? container.loc : `<span class="text-shimmer">${t('addressLoading')}</span>`}</div>
         </div>
       </div>
     `);
@@ -861,6 +912,7 @@ window.setCity = function (adapterId) {
 
   initClusterGroups();
   populateTypeSelect();
+  updateDataCredit();
   map.setView(adapter.center, adapter.zoom);
   loadAllContainers();
 };
