@@ -38,6 +38,26 @@ function populateCitySelect() {
   sel.value = currentAdapter.id;
 }
 
+/** Renders the per-city data dates in the sidebar footer. */
+function updateCacheInfo() {
+  const el = document.getElementById('cache-info');
+  if (!el) return;
+  const locale = currentLang === 'nl' ? 'nl-NL' : 'en-GB';
+  const fmt = ts => new Date(ts).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
+
+  let dateStr = '';
+  if (currentAdapter.dataDate) {
+    dateStr = fmt(Date.parse(currentAdapter.dataDate));
+  } else {
+    try {
+      const raw = localStorage.getItem(currentAdapter.cacheKey);
+      if (raw) dateStr = fmt(JSON.parse(raw).ts);
+    } catch { /* skip */ }
+  }
+  const key = currentAdapter.dataDate ? 'cacheInfoAsOf' : 'cacheInfoFetched';
+  el.innerHTML = dateStr ? t(key, { date: dateStr }) : '';
+}
+
 /** Updates the sidebar data-credit text from the current adapter. */
 function updateDataCredit() {
   const el = document.querySelector('.data-credit');
@@ -62,6 +82,7 @@ document.addEventListener('langchange', () => {
   populateCitySelect();
   populateTypeSelect();
   updateDataCredit();
+  updateCacheInfo();
   updateInstruction();
 });
 
@@ -212,6 +233,7 @@ function finishLoading() {
   overlay.style.opacity = '0';
   setTimeout(() => { overlay.hidden = true; overlay.style.opacity = ''; }, 600);
   document.getElementById('pdf-btn').style.display = 'flex';
+  updateCacheInfo();
 }
 
 async function loadAllContainers() {
@@ -446,6 +468,15 @@ async function findAndShowNearest() {
 // Fetch routes and render results
 // ============================================================
 
+const fmtContainerDate = iso => {
+  try {
+    return new Date(iso).toLocaleDateString(
+      currentLang === 'nl' ? 'nl-NL' : 'en-GB',
+      { day: 'numeric', month: 'short', year: 'numeric' }
+    );
+  } catch { return ''; }
+};
+
 async function fetchRoutesAndRender(containers) {
   const frac = FRACTIONS[selectedType];
   updateInstruction(t('instrCalculating'));
@@ -528,6 +559,7 @@ async function fetchRoutesAndRender(containers) {
             <span>${t('walkTime', { min: mins })}</span>
           </div>
           <div class="result-address" id="result-addr-${i}">${container.loc ? container.loc : `<span class="text-shimmer">${t('addressLoading')}</span>`}</div>
+          ${container.wijzigingsdatum_dp ? `<div class="result-date">${t('containerUpdated', { date: fmtContainerDate(container.wijzigingsdatum_dp) })}</div>` : ''}
         </div>
       </div>
     `);

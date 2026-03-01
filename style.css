@@ -282,6 +282,18 @@ select:focus { border-color: #003082; }
   color: #888;
 }
 
+.result-date {
+  font-size: 10px;
+  color: #bbb;
+  margin-top: 1px;
+}
+
+.popup-date {
+  font-size: 10px;
+  color: #bbb;
+  margin-top: 2px;
+}
+
 @keyframes shimmer {
   0%   { background-position: -200px 0; }
   100% { background-position: calc(200px + 100%) 0; }
@@ -326,6 +338,14 @@ select:focus { border-color: #003082; }
 }
 
 .pdf-btn:hover { background: #c0170f; }
+
+.cache-info {
+  font-size: 10px;
+  color: #ccc;
+  text-align: center;
+  line-height: 1.65;
+  margin-bottom: 6px;
+}
 
 .data-credit {
   font-size: 10px;

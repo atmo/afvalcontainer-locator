@@ -67,8 +67,8 @@
     nameKey:     'cityAmsterdam',
     center:      [52.3676, 4.9041],
     zoom:        13,
-    cacheKey:    'afvalcontainers_amsterdam_v3',
-    cacheFields: ['lat', 'lng', 'fractie_code', 'id', 'id_nummer', 'verwijderd_dp', 'status', 'loc'],
+    cacheKey:    'afvalcontainers_amsterdam_v4',
+    cacheFields: ['lat', 'lng', 'fractie_code', 'id', 'id_nummer', 'verwijderd_dp', 'status', 'loc', 'wijzigingsdatum_dp'],
     fractions,
     dataCredit: {
       nl: 'Data: <a href="https://data.amsterdam.nl" target="_blank" rel="noopener">Gemeente Amsterdam</a> (CC BY 4.0)<br>Kaart: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors<br>Routes: <a href="https://project-osrm.org" target="_blank" rel="noopener">OSRM</a>',

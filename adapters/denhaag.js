@@ -32,6 +32,7 @@
     zoom:        13,
     cacheKey:    'afvalcontainers_denhaag_v1',
     cacheFields: ['id', 'lat', 'lng', 'fractie_code', 'loc'],
+    dataDate:    '2026-02-28',
     fractions,
     dataCredit: {
       nl: 'Data: <a href="https://ckan.dataplatform.nl/dataset/bakken" target="_blank" rel="noopener">Gemeente Den Haag</a> (CC-0)<br>Kaart: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors<br>Routes: <a href="https://project-osrm.org" target="_blank" rel="noopener">OSRM</a>',

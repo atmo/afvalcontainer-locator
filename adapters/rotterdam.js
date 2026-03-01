@@ -35,6 +35,7 @@
     zoom:        13,
     cacheKey:    'afvalcontainers_rotterdam_v1',
     cacheFields: ['id', 'lat', 'lng', 'fractie_code', 'loc'],
+    dataDate:    null, // set to 'YYYY-MM-DD' of the dataset's publication date
     fractions,
     dataCredit: {
       nl: 'Data: <a href="https://rotterdam.dataplatform.nl" target="_blank" rel="noopener">Gemeente Rotterdam</a> (CC0-1.0)<br>Kaart: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors<br>Routes: <a href="https://project-osrm.org" target="_blank" rel="noopener">OSRM</a>',

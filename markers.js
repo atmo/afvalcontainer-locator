@@ -1,7 +1,16 @@
 // markers.js — Leaflet cluster groups and container marker factory.
 // Stateless: all mutable references are owned by app.js.
 
-import { t } from './i18n.js';
+import { t, currentLang } from './i18n.js';
+
+const fmtDate = iso => {
+  try {
+    return new Date(iso).toLocaleDateString(
+      currentLang === 'nl' ? 'nl-NL' : 'en-GB',
+      { day: 'numeric', month: 'short', year: 'numeric' }
+    );
+  } catch { return ''; }
+};
 import { reverseGeocode } from './routing.js';
 
 // ── Cluster groups ─────────────────────────────────────────────────────────
@@ -72,6 +81,7 @@ export function buildContainerMarker(container, fractions, handlers) {
         <button class="popup-clear-btn" title="${t('clearBtn')}">×</button>
       </div>
       <div class="popup-address" style="color:#555;margin-top:2px">${container.loc || t('addressLoading')}</div>
+      ${container.wijzigingsdatum_dp ? `<div class="popup-date">${t('containerUpdated', { date: fmtDate(container.wijzigingsdatum_dp) })}</div>` : ''}
     `;
     div.querySelector('.popup-clear-btn').addEventListener('click', e => {
       L.DomEvent.stopPropagation(e);

@@ -58,6 +58,9 @@ const TRANSLATIONS = {
     toastGeocodeFallback:  '⚠️ Adresgegevens niet beschikbaar voor sommige containers — adres via Nominatim opgezocht',
     geocodeLang:       'nl',
     pdfDocTitle:       'Afvalcontainers Amsterdam',
+    cacheInfoFetched:  'Opgehaald op {date}',
+    cacheInfoAsOf:     'Data van {date}',
+    containerUpdated:  'Bijgewerkt: {date}',
   },
   en: {
     pageTitle:         'Waste Containers Amsterdam',
@@ -112,6 +115,9 @@ const TRANSLATIONS = {
     toastGeocodeFallback:  '⚠️ Address data unavailable for some containers — looked up via Nominatim',
     geocodeLang:       'en',
     pdfDocTitle:       'Waste Containers Amsterdam',
+    cacheInfoFetched:  'Fetched on {date}',
+    cacheInfoAsOf:     'Data as of {date}',
+    containerUpdated:  'Updated: {date}',
   },
 };
 
