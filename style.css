@@ -34,6 +34,8 @@ body { display: flex; }
   flex-direction: column;
   z-index: 1000;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* momentum scroll on iOS */
+  overscroll-behavior: contain;      /* don't propagate scroll to the map */
 }
 
 #map-container {
