@@ -1,4 +1,4 @@
-'use strict';
+// i18n.js — translations and language helpers (ES module).
 
 // ============================================================
 // Translations
@@ -121,7 +121,7 @@ const TRANSLATIONS = {
 
 // Detect language: saved preference first, then browser locale.
 // Dutch only for nl-* locales; everything else defaults to English.
-let currentLang = (() => {
+export let currentLang = (() => {
   const saved = localStorage.getItem('afval_lang');
   if (saved === 'nl' || saved === 'en') return saved;
   return (navigator.language || '').toLowerCase().startsWith('nl') ? 'nl' : 'en';
@@ -135,7 +135,7 @@ let currentLang = (() => {
  * Translate a key in the current language.
  * Optionally substitutes {placeholder} tokens from the vars object.
  */
-function t(key, vars) {
+export function t(key, vars) {
   let s = (TRANSLATIONS[currentLang] || TRANSLATIONS.en)[key] || key;
   if (vars) Object.entries(vars).forEach(([k, v]) => { s = s.replaceAll('{' + k + '}', v); });
   return s;
@@ -146,7 +146,7 @@ function t(key, vars) {
  * App-specific selects (fraction dropdown) are NOT touched here —
  * app.js handles those via the 'langchange' event.
  */
-function applyTranslations() {
+export function applyTranslations() {
   document.title = t('pageTitle');
   document.querySelectorAll('[data-i18n]').forEach(el => {
     el.textContent = t(el.dataset.i18n);
@@ -160,7 +160,7 @@ function applyTranslations() {
  * Switch to a new language, persist the choice, re-translate the page,
  * and fire a 'langchange' CustomEvent for app.js to react to.
  */
-window.setLang = function (lang) {
+export function setLang(lang) {
   currentLang = lang;
   localStorage.setItem('afval_lang', lang);
   document.querySelectorAll('.lang-btn').forEach(btn => {
@@ -168,4 +168,7 @@ window.setLang = function (lang) {
   });
   applyTranslations();
   document.dispatchEvent(new CustomEvent('langchange'));
-};
+}
+
+// Expose on window so HTML onclick handlers (setLang('nl')) work.
+window.setLang = setLang;

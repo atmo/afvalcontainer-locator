@@ -160,10 +160,11 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-  <script src="i18n.js"></script>
+  <!-- Adapter scripts run first (before the deferred module) and register on window.CityAdapters -->
   <script src="adapters/amsterdam.js"></script>
   <script src="adapters/denhaag.js"></script>
   <script src="adapters/rotterdam.js"></script>
-  <script src="app.js"></script>
+  <!-- app.js is type="module" — automatically deferred, imports i18n.js, routing.js, markers.js -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>
