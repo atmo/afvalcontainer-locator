@@ -66,6 +66,9 @@ let nearestMarkers   = [];
 let routePolylines   = [];
 let clusterGroups    = {};  // fractie_code → L.markerClusterGroup
 let containerMarkers = {};  // container id → L.marker (for hiding source dot)
+let containerCodes   = {};  // container id → fractie_code (for spiderfy group check)
+let _spiderfied      = [];  // {marker, origLatLng}[] — currently spread out
+let _unspiderfyTimer = null;
 
 // ============================================================
 // Map
@@ -268,6 +271,49 @@ async function loadAllContainers() {
 }
 
 // ============================================================
+// Hover-spiderfy: spread co-located markers so they're individually clickable
+// ============================================================
+
+const SPIDERFY_R    = 38; // px — radius of the spread circle
+const SPIDERFY_OVERLAP = 30; // px — icon centres closer than this trigger a spread
+
+function spiderfyColocated(hoveredMarker) {
+  clearTimeout(_unspiderfyTimer);
+  // Already in the spread group — just prevent the collapse timer
+  if (_spiderfied.some(s => s.marker === hoveredMarker)) return;
+  unspiderfy();
+  // Only spread when markers are shown individually (clustering disabled)
+  if (map.getZoom() < 17) return;
+
+  const hPx = map.latLngToContainerPoint(hoveredMarker.getLatLng());
+
+  const nearby = Object.entries(containerMarkers)
+    .filter(([id]) => map.hasLayer(clusterGroups[containerCodes[id]]))
+    .map(([, m]) => m)
+    .filter(m => hPx.distanceTo(map.latLngToContainerPoint(m.getLatLng())) < SPIDERFY_OVERLAP);
+
+  if (nearby.length <= 1) return;
+
+  nearby.forEach((m, i) => {
+    const angle  = (2 * Math.PI * i) / nearby.length - Math.PI / 2;
+    const spread = map.containerPointToLatLng(L.point(
+      hPx.x + SPIDERFY_R * Math.cos(angle),
+      hPx.y + SPIDERFY_R * Math.sin(angle),
+    ));
+    _spiderfied.push({ marker: m, origLatLng: m.getLatLng() });
+    m.setLatLng(spread);
+  });
+}
+
+function unspiderfy() {
+  clearTimeout(_unspiderfyTimer);
+  _spiderfied.forEach(({ marker, origLatLng }) => marker.setLatLng(origLatLng));
+  _spiderfied = [];
+}
+
+map.on('zoomstart', unspiderfy);
+
+// ============================================================
 // Container marker
 // ============================================================
 
@@ -292,15 +338,26 @@ function buildContainerMarker(container) {
     const div = document.createElement('div');
     div.className = 'popup-content';
     div.innerHTML = `
-      <strong>${frac.emoji} ${fn(frac)}</strong>
+      <div class="popup-header">
+        <strong>${frac.emoji} ${fn(frac)}</strong>
+        <button class="popup-clear-btn" title="${t('clearBtn')}">×</button>
+      </div>
       <div class="popup-address" style="color:#555;margin-top:2px">${t('addressLoading')}</div>
     `;
+    div.querySelector('.popup-clear-btn').addEventListener('click', e => {
+      L.DomEvent.stopPropagation(e);
+      marker.closePopup();
+      clearAll();
+    });
     reverseGeocode(container.lat, container.lng).then(addr => {
       const el = div.querySelector('.popup-address');
       if (el) el.textContent = addr || '—';
     });
     return div;
-  });
+  }, { closeButton: false });
+
+  marker.on('mouseover', () => spiderfyColocated(marker));
+  marker.on('mouseout',  () => { _unspiderfyTimer = setTimeout(unspiderfy, 250); });
 
   marker.on('click', e => {
     L.DomEvent.stopPropagation(e);
@@ -315,6 +372,7 @@ function buildContainerMarker(container) {
   });
 
   containerMarkers[container.id] = marker;
+  containerCodes[container.id]   = container.fractie_code;
   return marker;
 }
 
@@ -672,8 +730,6 @@ async function fetchRoutesAndRender(containers) {
 
   // Update print metadata
   document.getElementById('print-type').textContent = fn(frac);
-  document.getElementById('print-date').textContent =
-    new Date().toLocaleDateString(t('dateLocale'), { dateStyle: 'long' });
 
   // Fit map to show everything
   const layers = [...routePolylines.map(({ poly }) => poly), ...nearestMarkers];
@@ -773,6 +829,7 @@ function clearRouteVisuals() {
 }
 
 window.clearAll = function () {
+  unspiderfy();
   clearRouteVisuals();
   if (startMarker) { map.removeLayer(startMarker); startMarker = null; }
   // Restore the source container dot if one was hidden
@@ -818,12 +875,13 @@ let _printMapPx   = null;
 // A4 portrait  usable area: 210 mm − 2×8 mm margins = 194 mm ≈ 733 px wide
 //                           297 mm − 2×8 mm margins = 281 mm ≈ 1062 px tall
 // A4 landscape usable area: 297 mm − 2×8 mm = 1062 px wide, 210 mm − 2×8 mm = 733 px tall
-// "results" height subtracts the ~120 px print-section strip.
+// "results" height subtracts ~190 px for the print-section strip
+// (header ~70px + 3 results ~90px + footer ~24px + padding ~6px).
 // These exact dimensions are applied as inline styles on the map container so
 // the preview and the printed page use the same pixel canvas.
 const PRINT_DIMS = {
-  portrait:  { results: L.point(733, 942), noResults: L.point(733, 1062) },
-  landscape: { results: L.point(1062, 613), noResults: L.point(1062, 733) },
+  portrait:  { results: L.point(733, 870), noResults: L.point(733, 1062) },
+  landscape: { results: L.point(1062, 540), noResults: L.point(1062, 733) },
 };
 
 // Injected <style> for dynamic @page orientation + optional results suppression
