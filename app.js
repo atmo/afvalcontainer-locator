@@ -4,50 +4,61 @@
 // Config
 // ============================================================
 
-const WFS_BASE  = 'https://api.data.amsterdam.nl/v1/wfs/huishoudelijkafval/';
-const ORS_KEY  = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjcyN2U3ZmQ0NDNhMzQwNTQ5N2FjNGY1MjZmODA1M2IxIiwiaCI6Im11cm11cjY0In0='; // paste your key from https://openrouteservice.org/sign-up/
+const ORS_KEY   = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjcyN2U3ZmQ0NDNhMzQwNTQ5N2FjNGY1MjZmODA1M2IxIiwiaCI6Im11cm11cjY0In0=';
 const ORS_BASE  = 'https://api.openrouteservice.org/v2/directions/foot-walking';
 const OSRM_BASE = 'https://routing.openstreetmap.de/routed-foot/route/v1/foot/';
-const PAGE_SIZE = 1000;
 
-const CACHE_KEY    = 'afvalcontainers_v2';
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-// Only persist the fields actually used by the app
-const CACHE_FIELDS = ['lat', 'lng', 'fractie_code', 'id', 'id_nummer',
-                      'verwijderd_dp', 'status'];
-
-const FRACTIONS = {
-  '1': { color: '#5d5d5d', nameKey: 'fractionRest',     emoji: '♻️'  },
-  '2': { color: '#27ae60', nameKey: 'fractionGlas',     emoji: '🫙'  },
-  '3': { color: '#2471a3', nameKey: 'fractionPapier',   emoji: '📦'  },
-  '5': { color: '#ca6f1e', nameKey: 'fractionTextiel',  emoji: '👕'  },
-};
 
 // Colors and offsets for up to 5 routes
-const ROUTE_COLORS   = ['#c0392b', '#7d3c98', '#148f77', '#d4ac0d', '#2471a3'];
-const ROUTE_OFFSETS  = [-8, -4, 0, 4, 8];  // lateral pixel offsets for overlapping routes
+const ROUTE_COLORS  = ['#c0392b', '#7d3c98', '#148f77', '#d4ac0d', '#2471a3'];
+const ROUTE_OFFSETS = [-8, -4, 0, 4, 8];  // lateral pixel offsets for overlapping routes
+
+// ============================================================
+// City adapter registry + active adapter
+// (adapters/*.js scripts register on window.CityAdapters before this file loads)
+// ============================================================
+
+window.CityAdapters = window.CityAdapters || {};
+
+const _savedCityId = localStorage.getItem('afvalcontainers_city') || 'amsterdam';
+let currentAdapter  = window.CityAdapters[_savedCityId] || window.CityAdapters.amsterdam;
+let FRACTIONS       = currentAdapter.fractions;
 
 // ============================================================
 // App-specific i18n helpers  (t / currentLang / applyTranslations / setLang
 // live in i18n.js, loaded before this file)
 // ============================================================
 
-/** Returns the localised fraction name (depends on FRACTIONS defined above). */
+/** Returns the localised fraction name. */
 const fn = frac => t(frac.nameKey);
 
-/** Re-populates the fraction-type <select> with translated option labels. */
-function _updateSelectOptions() {
+/** Re-populates the city <select> from the adapter registry. */
+function populateCitySelect() {
+  const sel = document.getElementById('city-select');
+  if (!sel) return;
+  sel.innerHTML = '';
+  Object.values(window.CityAdapters).forEach(adapter => {
+    sel.appendChild(new Option(t(adapter.nameKey), adapter.id));
+  });
+  sel.value = currentAdapter.id;
+}
+
+/** Re-populates the type <select> based on the current adapter's fractions. */
+function populateTypeSelect() {
   const sel = document.getElementById('type-select');
   sel.options[0].textContent = t('typeAll');
-  sel.options[1].textContent = `♻️  ${t('fractionRest')}`;
-  sel.options[2].textContent = `🫙  ${t('fractionGlas')}`;
-  sel.options[3].textContent = `📦  ${t('fractionPapier')}`;
-  sel.options[4].textContent = `👕  ${t('fractionTextiel')}`;
+  while (sel.options.length > 1) sel.remove(1);
+  Object.entries(FRACTIONS).forEach(([code, frac]) => {
+    sel.appendChild(new Option(`${frac.emoji}  ${t(frac.nameKey)}`, code));
+  });
+  sel.value = selectedType;
 }
 
 // React to language switches triggered by setLang() in i18n.js
 document.addEventListener('langchange', () => {
-  _updateSelectOptions();
+  populateCitySelect();
+  populateTypeSelect();
   updateInstruction();
 });
 
@@ -81,8 +92,8 @@ const savedView = (() => {
   try { return JSON.parse(localStorage.getItem(MAP_VIEW_KEY)); } catch { return null; }
 })();
 const map = L.map('map', {
-  center: savedView ? savedView.center : [52.3676, 4.9041],
-  zoom:   savedView ? savedView.zoom   : 13,
+  center: savedView ? savedView.center : currentAdapter.center,
+  zoom:   savedView ? savedView.zoom   : currentAdapter.zoom,
   zoomControl: true,
 });
 
@@ -97,55 +108,62 @@ map.on('moveend zoomend', () => {
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
-  attribution:
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | ' +
-    'Data: <a href="https://data.amsterdam.nl">Gemeente Amsterdam</a>',
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 }).addTo(map);
 
 // ============================================================
 // Cluster groups (one per fraction, so we can toggle visibility)
 // ============================================================
 
-Object.keys(FRACTIONS).forEach(code => {
-  const frac = FRACTIONS[code];
+function initClusterGroups() {
+  Object.values(clusterGroups).forEach(g => map.removeLayer(g));
+  clusterGroups = {};
 
-  const group = L.markerClusterGroup({
-    maxClusterRadius: 55,
-    disableClusteringAtZoom: 17,
-    chunkedLoading: true,
-    iconCreateFunction: cluster => {
-      const n    = cluster.getChildCount();
-      const size = n < 10 ? 30 : n < 100 ? 36 : 42;
-      return L.divIcon({
-        html: `<div style="
-          width:${size}px;height:${size}px;
-          background:${frac.color};
-          color:#fff;border-radius:50%;
-          display:flex;align-items:center;justify-content:center;
-          font-weight:700;font-size:${size < 36 ? 11 : 13}px;
-          border:2px solid rgba(255,255,255,0.85);
-          box-shadow:0 2px 6px rgba(0,0,0,0.3);
-        ">${n}</div>`,
-        className: '',
-        iconSize:   [size, size],
-        iconAnchor: [size / 2, size / 2],
-      });
-    },
+  Object.entries(FRACTIONS).forEach(([code, frac]) => {
+    const group = L.markerClusterGroup({
+      maxClusterRadius: 55,
+      disableClusteringAtZoom: 17,
+      chunkedLoading: true,
+      iconCreateFunction: cluster => {
+        const n    = cluster.getChildCount();
+        const size = n < 10 ? 30 : n < 100 ? 36 : 42;
+        return L.divIcon({
+          html: `<div style="
+            width:${size}px;height:${size}px;
+            background:${frac.color};
+            color:#fff;border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+            font-weight:700;font-size:${size < 36 ? 11 : 13}px;
+            border:2px solid rgba(255,255,255,0.85);
+            box-shadow:0 2px 6px rgba(0,0,0,0.3);
+          ">${n}</div>`,
+          className: '',
+          iconSize:   [size, size],
+          iconAnchor: [size / 2, size / 2],
+        });
+      },
+    });
+
+    group.addTo(map);
+    clusterGroups[code] = group;
   });
+}
 
-  group.addTo(map);
-  clusterGroups[code] = group;
-});
+initClusterGroups();
 
 // ============================================================
 // Cache helpers
 // ============================================================
 
 function purgeOldCaches() {
-  // Remove any previous cache versions to free space before writing the current one
+  const validKeys = new Set([
+    MAP_VIEW_KEY,
+    'afvalcontainers_city',
+    ...Object.values(window.CityAdapters).map(a => a.cacheKey),
+  ]);
   for (let i = localStorage.length - 1; i >= 0; i--) {
     const k = localStorage.key(i);
-    if (k && k.startsWith('afvalcontainers_') && k !== CACHE_KEY && k !== MAP_VIEW_KEY) {
+    if (k && k.startsWith('afvalcontainers_') && !validKeys.has(k)) {
       localStorage.removeItem(k);
     }
   }
@@ -154,11 +172,11 @@ function purgeOldCaches() {
 function readCache() {
   purgeOldCaches();
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(currentAdapter.cacheKey);
     if (!raw) return null;
     const { ts, data } = JSON.parse(raw);
     if (Date.now() - ts > CACHE_TTL_MS) {
-      localStorage.removeItem(CACHE_KEY);
+      localStorage.removeItem(currentAdapter.cacheKey);
       return null;
     }
     return data; // array of minimal container objects
@@ -169,12 +187,13 @@ function readCache() {
 
 function writeCache(containers) {
   try {
-    const data = containers.map(c => {
+    const fields = currentAdapter.cacheFields;
+    const data   = containers.map(c => {
       const obj = {};
-      CACHE_FIELDS.forEach(k => { if (c[k] != null) obj[k] = c[k]; });
+      fields.forEach(k => { if (c[k] != null) obj[k] = c[k]; });
       return obj;
     });
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+    localStorage.setItem(currentAdapter.cacheKey, JSON.stringify({ ts: Date.now(), data }));
   } catch (e) {
     console.warn('Cache write failed (storage full?):', e.message);
   }
@@ -202,11 +221,15 @@ function populateMarkers(containers) {
 function finishLoading() {
   const overlay = document.getElementById('loading-overlay');
   overlay.style.opacity = '0';
-  setTimeout(() => overlay.remove(), 600);
+  setTimeout(() => { overlay.hidden = true; overlay.style.opacity = ''; }, 600);
   document.getElementById('pdf-btn').style.display = 'flex';
 }
 
 async function loadAllContainers() {
+  const overlay = document.getElementById('loading-overlay');
+  overlay.hidden        = false;
+  overlay.style.opacity = '';
+
   // ── 1. Try cache ──────────────────────────────────────────
   const cached = readCache();
   if (cached) {
@@ -217,57 +240,18 @@ async function loadAllContainers() {
     return;
   }
 
-  // ── 2. Fetch from API ─────────────────────────────────────
-  let totalLoaded = 0;
-  let startIndex  = 0;
-  let hasMore     = true;
-
-  while (hasMore) {
-    const url = new URL(WFS_BASE);
-    url.searchParams.set('SERVICE',      'WFS');
-    url.searchParams.set('VERSION',      '2.0.0');
-    url.searchParams.set('REQUEST',      'GetFeature');
-    url.searchParams.set('TYPENAMES',    'container');
-    url.searchParams.set('OUTPUTFORMAT', 'geojson');
-    url.searchParams.set('SRSNAME',      'EPSG:4326');
-    url.searchParams.set('count',        PAGE_SIZE);
-    url.searchParams.set('STARTINDEX',   startIndex);
-
-    try {
-      const resp = await fetch(url.toString());
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const geojson  = await resp.json();
-      const features = geojson.features || [];
-
-      const batch = [];
-      features.forEach(feature => {
-        if (!feature.geometry)   return;
-        const props = feature.properties;
-        if (props.verwijderd_dp) return;
-        if (props.status !== 1)  return; // 0=inactive, 1=active, 2=planned
-        const code = props.fractie_code;
-        if (!FRACTIONS[code])    return;
-
-        const [lng, lat] = feature.geometry.coordinates;
-        batch.push({ lat, lng, ...props });
-      });
-
-      populateMarkers(batch);
-
-      totalLoaded += features.length;
+  // ── 2. Fetch via adapter ───────────────────────────────────
+  try {
+    const containers = await currentAdapter.load(loaded => {
       document.getElementById('loading-count').textContent =
-        t('loaded', { n: totalLoaded.toLocaleString() });
-
-      hasMore = features.length === PAGE_SIZE;
-      startIndex += PAGE_SIZE;
-    } catch (err) {
-      console.error('Error loading page:', err);
-      hasMore = false;
-    }
+        t('loaded', { n: loaded.toLocaleString() });
+    });
+    populateMarkers(containers);
+    writeCache(allContainers);
+  } catch (err) {
+    console.error('Error loading containers:', err);
   }
 
-  // ── 3. Persist to cache for next visit ───────────────────
-  writeCache(allContainers);
   finishLoading();
 }
 
@@ -856,6 +840,32 @@ window.setTopN = function (n) {
 };
 
 // ============================================================
+// City switching
+// ============================================================
+
+window.setCity = function (adapterId) {
+  const adapter = window.CityAdapters[adapterId];
+  if (!adapter || adapter === currentAdapter) return;
+
+  clearAll();
+
+  // Remove all container markers / cluster layers
+  Object.values(clusterGroups).forEach(g => map.removeLayer(g));
+  allContainers    = [];
+  containerMarkers = {};
+  containerCodes   = {};
+
+  localStorage.setItem('afvalcontainers_city', adapterId);
+  currentAdapter = adapter;
+  FRACTIONS      = adapter.fractions;
+
+  initClusterGroups();
+  populateTypeSelect();
+  map.setView(adapter.center, adapter.zoom);
+  loadAllContainers();
+};
+
+// ============================================================
 // Haversine distance (returns metres)
 // ============================================================
 
@@ -1029,5 +1039,6 @@ window.cancelPrintPreview = function () {
 // Boot
 // ============================================================
 
-setLang(currentLang);   // marks button, translates, fires langchange → _updateSelectOptions + updateInstruction
+populateCitySelect();
+setLang(currentLang);   // marks button, translates, fires langchange → populateTypeSelect + updateInstruction
 loadAllContainers();

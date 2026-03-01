@@ -27,7 +27,7 @@
       <div class="header-icon">♻️</div>
       <div>
         <h1 data-i18n="sidebarTitle">Afvalcontainers</h1>
-        <p class="header-sub">Amsterdam</p>
+        <select id="city-select" class="city-select" onchange="setCity(this.value)"></select>
       </div>
     </div>
 
@@ -44,10 +44,6 @@
       </div>
       <select id="type-select">
         <option value="">— Alle types tonen —</option>
-        <option value="1">♻️  Rest</option>
-        <option value="2">🫙  Glas</option>
-        <option value="3">📦  Papier</option>
-        <option value="5">👕  Textiel</option>
       </select>
     </div>
 
@@ -165,6 +161,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="i18n.js"></script>
+  <script src="adapters/amsterdam.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
