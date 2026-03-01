@@ -51,7 +51,7 @@ function populateCitySelect() {
 
 /** Updates the sidebar data-credit text from the current adapter. */
 function updateDataCredit() {
-  const el = document.querySelector('[data-i18n-html="dataCredit"]');
+  const el = document.querySelector('.data-credit');
   if (!el) return;
   const credit = currentAdapter.dataCredit;
   if (credit) el.innerHTML = credit[currentLang] || credit.en;
