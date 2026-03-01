@@ -210,7 +210,7 @@ async function loadAllContainers() {
   const cached = readCache();
   if (cached) {
     document.getElementById('loading-count').textContent =
-      t('loadedCache', { n: cached.length.toLocaleString(t('dateLocale')) });
+      t('loadedCache', { n: cached.length.toLocaleString() });
     populateMarkers(cached);
     finishLoading();
     return;
@@ -255,7 +255,7 @@ async function loadAllContainers() {
 
       totalLoaded += features.length;
       document.getElementById('loading-count').textContent =
-        t('loaded', { n: totalLoaded.toLocaleString(t('dateLocale')) });
+        t('loaded', { n: totalLoaded.toLocaleString() });
 
       hasMore = features.length === PAGE_SIZE;
       startIndex += PAGE_SIZE;
