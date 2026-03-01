@@ -1,0 +1,163 @@
+'use strict';
+
+// ============================================================
+// Translations
+// ============================================================
+
+const TRANSLATIONS = {
+  nl: {
+    pageTitle:         'Afvalcontainers Amsterdam',
+    loadingLabel:      'Containers laden…',
+    loaded:            '{n} geladen',
+    loadedCache:       '{n} geladen (cache)',
+    sidebarTitle:      'Afvalcontainers',
+    typeLabel:         'Container type',
+    typeAll:           '— Alle types tonen —',
+    modeLabel:         'Startpunt kiezen',
+    modePoint:         '📍 Punt op kaart',
+    modeContainer:     '🗑️ Container',
+    instrPoint:        '📍 Klik ergens op de kaart om een startpunt te kiezen.',
+    instrContainer:    '🗑️ Klik op een container op de kaart om die als startpunt te kiezen.<br><small style="color:#aaa">Zoom in om individuele containers te zien.</small>',
+    instrTypeNeeded:   '✅ Startpunt gekozen! Selecteer nu een <strong>container type</strong> hierboven.',
+    instrCalculating:  '🔄 Routes berekenen…',
+    instrNoneFound:    '⚠️ Geen containers van dit type gevonden.',
+    instrFound:        '✅ 3 dichtstbijzijnde {name}containers gevonden!',
+    resultsHeader:     '3 dichtstbijzijnde containers',
+    addressLoading:    'Adres laden…',
+    containerLabel:    '{emoji} {name}container',
+    walkTime:          '⏱ ~{min} min',
+    printWalkTime:     '~{min} min looptijd',
+    pdfBtn:            '📄 Download als PDF',
+    clearBtn:          'Wissen',
+    legendTitle:       'Legenda',
+    fractionRest:      'Rest',
+    fractionGlas:      'Glas',
+    fractionPapier:    'Papier',
+    fractionTextiel:   'Textiel',
+    printModalTitle:   'PDF-instellingen',
+    printOrientLabel:  'Oriëntatie',
+    printPortrait:     'Staand',
+    printLandscape:    'Liggend',
+    printShowDetails:  'Routeoverzicht tonen',
+    printCancel:       'Annuleren',
+    printConfirm:      'Afdrukken',
+    previewHint:       '🖨 Pan en zoom om het kaartgebied aan te passen',
+    previewTip:        'Schakel in de printdialoog <em>Kopteksten en voetteksten</em> uit om de bestandsnaam te verbergen.',
+    previewCancel:     'Annuleren',
+    previewPrint:      'Afdrukken',
+    printTitle:        '♻️ Afvalcontainers Amsterdam – Looproutes',
+    printDateLabel:    'Datum:',
+    printTypeLabel:    'Container type:',
+    printFooter:       'Data: Gemeente Amsterdam Open Data (CC BY 4.0) | Kaart: © OpenStreetMap contributors | Routes: OSRM',
+    toastOsrmFallback: '⚠️ ORS niet beschikbaar — routes via OSRM (minder nauwkeurige looproutes)',
+    geocodeLang:       'nl',
+    dateLocale:        'nl-NL',
+    dataCredit:        'Data: <a href="https://data.amsterdam.nl" target="_blank" rel="noopener">Gemeente Amsterdam</a> (CC BY 4.0)<br>Kaart: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors<br>Routes: <a href="https://project-osrm.org" target="_blank" rel="noopener">OSRM</a>',
+    pdfDocTitle:       'Afvalcontainers Amsterdam',
+  },
+  en: {
+    pageTitle:         'Waste Containers Amsterdam',
+    loadingLabel:      'Loading containers…',
+    loaded:            '{n} loaded',
+    loadedCache:       '{n} loaded (cache)',
+    sidebarTitle:      'Waste Containers',
+    typeLabel:         'Container type',
+    typeAll:           '— Show all types —',
+    modeLabel:         'Choose start point',
+    modePoint:         '📍 Point on map',
+    modeContainer:     '🗑️ Container',
+    instrPoint:        '📍 Click anywhere on the map to choose a start point.',
+    instrContainer:    '🗑️ Click on a container on the map to use it as a start point.<br><small style="color:#aaa">Zoom in to see individual containers.</small>',
+    instrTypeNeeded:   '✅ Start point set! Now select a <strong>container type</strong> above.',
+    instrCalculating:  '🔄 Calculating routes…',
+    instrNoneFound:    '⚠️ No containers of this type found.',
+    instrFound:        '✅ Found 3 nearest {name} containers!',
+    resultsHeader:     '3 nearest containers',
+    addressLoading:    'Loading address…',
+    containerLabel:    '{emoji} {name} container',
+    walkTime:          '⏱ ~{min} min',
+    printWalkTime:     '~{min} min walk',
+    pdfBtn:            '📄 Download as PDF',
+    clearBtn:          'Clear',
+    legendTitle:       'Legend',
+    fractionRest:      'Residual',
+    fractionGlas:      'Glass',
+    fractionPapier:    'Paper',
+    fractionTextiel:   'Textiles',
+    printModalTitle:   'PDF settings',
+    printOrientLabel:  'Orientation',
+    printPortrait:     'Portrait',
+    printLandscape:    'Landscape',
+    printShowDetails:  'Show route overview',
+    printCancel:       'Cancel',
+    printConfirm:      'Print',
+    previewHint:       '🖨 Pan and zoom to adjust the map area',
+    previewTip:        'In the print dialog, uncheck <em>Headers and footers</em> to hide the filename.',
+    previewCancel:     'Cancel',
+    previewPrint:      'Print',
+    printTitle:        '♻️ Waste Containers Amsterdam – Walking routes',
+    printDateLabel:    'Date:',
+    printTypeLabel:    'Container type:',
+    printFooter:       'Data: City of Amsterdam Open Data (CC BY 4.0) | Map: © OpenStreetMap contributors | Routes: OSRM',
+    toastOsrmFallback: '⚠️ ORS unavailable — using OSRM (less accurate pedestrian routing)',
+    geocodeLang:       'en',
+    dateLocale:        'en-GB',
+    dataCredit:        'Data: <a href="https://data.amsterdam.nl" target="_blank" rel="noopener">City of Amsterdam</a> (CC BY 4.0)<br>Map: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors<br>Routes: <a href="https://project-osrm.org" target="_blank" rel="noopener">OSRM</a>',
+    pdfDocTitle:       'Waste Containers Amsterdam',
+  },
+};
+
+// ============================================================
+// Runtime state
+// ============================================================
+
+// Detect language: saved preference first, then browser locale.
+// Dutch only for nl-* locales; everything else defaults to English.
+let currentLang = (() => {
+  const saved = localStorage.getItem('afval_lang');
+  if (saved === 'nl' || saved === 'en') return saved;
+  return (navigator.language || '').toLowerCase().startsWith('nl') ? 'nl' : 'en';
+})();
+
+// ============================================================
+// Public API
+// ============================================================
+
+/**
+ * Translate a key in the current language.
+ * Optionally substitutes {placeholder} tokens from the vars object.
+ */
+function t(key, vars) {
+  let s = (TRANSLATIONS[currentLang] || TRANSLATIONS.en)[key] || key;
+  if (vars) Object.entries(vars).forEach(([k, v]) => { s = s.replaceAll('{' + k + '}', v); });
+  return s;
+}
+
+/**
+ * Walk all [data-i18n] / [data-i18n-html] elements and update their text.
+ * App-specific selects (fraction dropdown) are NOT touched here —
+ * app.js handles those via the 'langchange' event.
+ */
+function applyTranslations() {
+  document.title = t('pageTitle');
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    el.innerHTML = t(el.dataset.i18nHtml);
+  });
+}
+
+/**
+ * Switch to a new language, persist the choice, re-translate the page,
+ * and fire a 'langchange' CustomEvent for app.js to react to.
+ */
+window.setLang = function (lang) {
+  currentLang = lang;
+  localStorage.setItem('afval_lang', lang);
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
+  applyTranslations();
+  document.dispatchEvent(new CustomEvent('langchange'));
+};
