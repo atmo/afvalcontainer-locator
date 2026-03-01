@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# curl command artifacts (accidental directory creation)
+curl/
+https:/
+-s/
+
+# Misc
+*.log
+
+
+TODOS.txt
