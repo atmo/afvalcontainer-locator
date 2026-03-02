@@ -91,6 +91,10 @@ function populateTypeSelect() {
 }
 
 // React to language switches triggered by setLang() in i18n.js
+function updatePageTitle() {
+  document.title = t('sidebarTitle') + ' ' + t(currentAdapter.nameKey);
+}
+
 document.addEventListener('langchange', () => {
   populateCitySelect();
   populateTypeSelect();
@@ -98,6 +102,7 @@ document.addEventListener('langchange', () => {
   updateAdapterNote();
   updateCacheInfo();
   updateInstruction();
+  updatePageTitle();
 });
 
 // ============================================================
@@ -698,6 +703,7 @@ window.setCity = function (adapterId) {
   populateTypeSelect();
   updateDataCredit();
   updateAdapterNote();
+  updatePageTitle();
   setSidebarExpanded(false);
   const perCityView = (() => {
     try { return JSON.parse(localStorage.getItem(cityViewKey(adapterId))); } catch { return null; }
