@@ -799,6 +799,120 @@ select:focus { border-color: #003082; }
 .preview-print-btn:hover { background: #e8eef8; }
 
 /* ============================================================
+   Mobile — bottom-sheet sidebar  (phones ≤ 640 px)
+   ============================================================ */
+
+/* Handle pill: hidden on desktop */
+.sidebar-handle { display: none; }
+
+@media (max-width: 640px) {
+  /* Map fills the full viewport behind the sheet */
+  body { display: block; }
+
+  #map-container {
+    position: fixed;
+    inset: 0;
+  }
+
+  /* Bottom sheet ─────────────────────────────────────────── */
+  /* "peek" = handle (16px) + header (~70px) + small gap = 110px */
+  #sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    max-height: 85vh;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.22);
+    /* Slide so only the peek is visible */
+    transform: translateY(calc(100% - 110px - env(safe-area-inset-bottom, 0px)));
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform;
+    z-index: 1100;
+    /* Push content above the iOS home indicator */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  #sidebar.sidebar-expanded {
+    transform: translateY(0);
+  }
+
+  /* Drag handle pill */
+  .sidebar-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+    touch-action: manipulation; /* no double-tap zoom delay */
+  }
+
+  .sidebar-handle::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 2px;
+  }
+
+  /* Let the whole sidebar scroll as one unit */
+  .results-panel {
+    flex: none;
+    overflow-y: visible;
+  }
+
+  /* ── Map overlays: reposition above the peek ─────────────── */
+  /* Lang switch stays top-right — always accessible above the sheet */
+
+  .map-legend {
+    bottom: calc(110px + env(safe-area-inset-bottom, 0px) + 14px);
+  }
+
+  .toast {
+    bottom: calc(110px + env(safe-area-inset-bottom, 0px) + 14px);
+    left: 10px;
+    right: 10px;
+    max-width: none;
+    text-align: center;
+  }
+
+  /* ── Touch targets ───────────────────────────────────────── */
+  .mode-btn {
+    padding: 12px 4px;
+    min-height: 44px;
+  }
+
+  .clear-btn-inline {
+    padding: 5px 10px;
+    min-height: 32px;
+  }
+
+  #type-select {
+    min-height: 44px;
+  }
+
+  /* Easier to tap the popup × */
+  .popup-clear-btn {
+    font-size: 20px;
+    padding: 4px 6px;
+    min-width: 32px;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* PDF / print: not practical on mobile */
+  .pdf-btn { display: none !important; }
+  #print-preview-toolbar { display: none !important; }
+}
+
+/* ============================================================
    PRINT / PDF
    ============================================================ */
 @media print {

@@ -375,6 +375,7 @@ function applyTypeFilter() {
 
 map.on('click', e => {
   if (mode === 'point') {
+    setSidebarExpanded(false);
     setStartPoint(e.latlng.lat, e.latlng.lng);
   }
 });
@@ -595,6 +596,7 @@ async function fetchRoutesAndRender(containers) {
   });
 
   document.getElementById('results-panel').hidden = false;
+  setSidebarExpanded(true);
   document.getElementById('results-count-header').textContent = t('resultsHeader', { n: topN });
   updateInstruction(t('instrFound', { n: topN, name: fn(frac).toLowerCase() }));
 
@@ -638,6 +640,7 @@ function clearRouteVisuals() {
 }
 
 window.clearAll = function () {
+  setSidebarExpanded(false);
   unspiderfy();
   clearRouteVisuals();
   if (startMarker) { map.removeLayer(startMarker); startMarker = null; }
@@ -686,6 +689,7 @@ window.setCity = function (adapterId) {
   populateTypeSelect();
   updateDataCredit();
   updateAdapterNote();
+  setSidebarExpanded(false);
   const perCityView = (() => {
     try { return JSON.parse(localStorage.getItem(cityViewKey(adapterId))); } catch { return null; }
   })();
@@ -831,6 +835,18 @@ window.cancelPrintPreview = function () {
   _printBounds = null;
   _printMapPx  = null;
 };
+
+// ============================================================
+// Mobile — bottom-sheet sidebar
+// ============================================================
+
+function setSidebarExpanded(expanded) {
+  document.getElementById('sidebar').classList.toggle('sidebar-expanded', expanded);
+}
+
+document.getElementById('sidebar-handle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('sidebar-expanded');
+});
 
 // ============================================================
 // Boot
