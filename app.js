@@ -124,10 +124,15 @@ let _unspiderfyTimer = null;
 // Map
 // ============================================================
 
-const MAP_VIEW_KEY = 'afvalcontainers_view';
+const MAP_VIEW_KEY     = 'afvalcontainers_view';
+const cityViewKey = id => `afvalcontainers_view_${id}`;
 
 const savedView = (() => {
-  try { return JSON.parse(localStorage.getItem(MAP_VIEW_KEY)); } catch { return null; }
+  try {
+    // Prefer per-city key; fall back to legacy single key for existing users
+    return JSON.parse(localStorage.getItem(cityViewKey(currentAdapter.id)))
+        ?? JSON.parse(localStorage.getItem(MAP_VIEW_KEY));
+  } catch { return null; }
 })();
 
 const map = L.map('map', {
@@ -138,7 +143,7 @@ const map = L.map('map', {
 
 map.on('moveend zoomend', () => {
   try {
-    localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({
+    localStorage.setItem(cityViewKey(currentAdapter.id), JSON.stringify({
       center: [map.getCenter().lat, map.getCenter().lng],
       zoom:   map.getZoom(),
     }));
@@ -165,6 +170,7 @@ function purgeOldCaches() {
     MAP_VIEW_KEY,
     'afvalcontainers_city',
     ...Object.values(window.CityAdapters).map(a => a.cacheKey),
+    ...Object.values(window.CityAdapters).map(a => cityViewKey(a.id)),
   ]);
   for (let i = localStorage.length - 1; i >= 0; i--) {
     const k = localStorage.key(i);
@@ -680,7 +686,13 @@ window.setCity = function (adapterId) {
   populateTypeSelect();
   updateDataCredit();
   updateAdapterNote();
-  map.setView(adapter.center, adapter.zoom);
+  const perCityView = (() => {
+    try { return JSON.parse(localStorage.getItem(cityViewKey(adapterId))); } catch { return null; }
+  })();
+  map.setView(
+    perCityView ? perCityView.center : adapter.center,
+    perCityView ? perCityView.zoom   : adapter.zoom,
+  );
   loadAllContainers();
 };
 
