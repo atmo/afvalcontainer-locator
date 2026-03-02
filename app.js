@@ -153,6 +153,8 @@ map.on('moveend zoomend', () => {
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  keepBuffer: 4,
+  updateWhenIdle: false,
 }).addTo(map);
 
 // ============================================================
