@@ -974,34 +974,91 @@ select:focus { border-color: #003082; }
   #print-section {
     display: block !important;
     flex: 0 0 auto;
-    padding: 8px 20px 6px;
-    font-size: 11px;
-    line-height: 1.5;
+    padding: 8px 20px 4px;
+    font-family: system-ui, -apple-system, sans-serif;
   }
 
-  .print-header h2 {
-    font-size: 14px;
-    color: #003082;
-    margin-bottom: 4px;
+  /* Hero: fraction type name */
+  .print-type-hero {
+    font-size: 20px;
+    font-weight: 800;
+    color: #111;
+    letter-spacing: 0.3px;
+    line-height: 1.2;
+    margin-bottom: 2px;
+  }
+
+  /* Meta row: city · subtitle · date */
+  .print-meta-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 10px;
+    color: #666;
     border-bottom: 2px solid #003082;
     padding-bottom: 4px;
+    margin-bottom: 6px;
   }
 
-  .print-header p { margin-bottom: 1px; }
+  .print-city {
+    font-weight: 700;
+    color: #003082;
+  }
 
-  #print-results { margin-top: 6px; }
+  .print-date {
+    margin-left: auto;
+    color: #999;
+  }
+
+  /* Result cards */
+  #print-results {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
 
   .print-result {
-    margin: 2px 0;
+    display: flex;
+    align-items: stretch;
+    border: 1px solid #e0e0e0;
+    border-left: 5px solid;
+    border-radius: 3px;
+    overflow: hidden;
+    break-inside: avoid;
+  }
+
+  .print-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    min-width: 30px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .print-body {
     padding: 3px 8px;
-    background: #f7f7f7;
-    border-left: 4px solid;
+    flex: 1;
+    line-height: 1.25;
+  }
+
+  .print-address {
+    font-size: 12px;
+    font-weight: 700;
+    color: #111;
+    margin-bottom: 0;
+  }
+
+  .print-metrics {
     font-size: 11px;
-    line-height: 1.4;
+    font-weight: 600;
+    color: #555;
   }
 
   .print-footer {
-    margin-top: 6px;
+    margin-top: 8px;
     font-size: 9px;
     color: #aaa;
     border-top: 1px solid #eee;

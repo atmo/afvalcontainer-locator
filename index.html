@@ -118,8 +118,12 @@
   <!-- Print-only summary (hidden in browser, shown when printing) -->
   <div id="print-section">
     <div class="print-header">
-      <h2 data-i18n="printTitle">♻️ Afvalcontainers Amsterdam – Looproutes</h2>
-      <p><strong data-i18n="printTypeLabel">Container type:</strong> <span id="print-type">—</span></p>
+      <div class="print-type-hero" id="print-type">—</div>
+      <div class="print-meta-row">
+        <span class="print-city" id="print-city"></span>
+        <span class="print-subtitle" data-i18n="printSubtitle">Dichtstbijzijnde containers</span>
+        <span class="print-date" id="print-date"></span>
+      </div>
     </div>
     <div id="print-results"></div>
     <p class="print-footer" data-i18n="printFooter">

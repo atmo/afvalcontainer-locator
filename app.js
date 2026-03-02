@@ -586,11 +586,13 @@ async function fetchRoutesAndRender(containers) {
     `);
 
     // ── Print result (address filled in when resolved) ──
-    const _cName = t('containerLabel', { emoji: '', name: fn(frac) }).trim();
     printResults.insertAdjacentHTML('beforeend', `
       <div class="print-result" style="border-left-color:${color}">
-        <strong style="color:${color}">${i + 1}.</strong>
-        ${_cName} — <span id="print-addr-${i}">…</span> — ${distStr} (${t('printWalkTime', { min: mins })})
+        <div class="print-num" style="background:${color}">${i + 1}</div>
+        <div class="print-body">
+          <div class="print-address" id="print-addr-${i}">…</div>
+          <div class="print-metrics">${distStr} · ${t('printWalkTime', { min: mins })}</div>
+        </div>
       </div>
     `);
   });
@@ -601,7 +603,12 @@ async function fetchRoutesAndRender(containers) {
   updateInstruction(t('instrFound', { n: topN, name: fn(frac).toLowerCase() }));
 
   // Update print metadata
-  document.getElementById('print-type').textContent = fn(frac);
+  document.getElementById('print-type').textContent = `${frac.emoji}  ${fn(frac).toUpperCase()}`;
+  document.getElementById('print-city').textContent = t(currentAdapter.nameKey);
+  document.getElementById('print-date').textContent = new Date().toLocaleDateString(
+    currentLang === 'nl' ? 'nl-NL' : 'en-GB',
+    { day: 'numeric', month: 'long', year: 'numeric' }
+  );
 
   // Fit map to show everything
   const layers = [...routePolylines.map(({ poly }) => poly), ...nearestMarkers];
@@ -712,10 +719,10 @@ let _printMapPx   = null;
 // A4 portrait  usable area: 210 mm − 2×8 mm margins = 194 mm ≈ 733 px wide
 //                           297 mm − 2×8 mm margins = 281 mm ≈ 1062 px tall
 // A4 landscape usable area: 297 mm − 2×8 mm = 1062 px wide, 210 mm − 2×8 mm = 733 px tall
-// "results" height subtracts ~190 px for the print-section strip.
+// "results" height subtracts ~270 px for the print-section strip (fits up to 5 result cards).
 const PRINT_DIMS = {
-  portrait:  { results: L.point(733, 870), noResults: L.point(733, 1062) },
-  landscape: { results: L.point(1062, 540), noResults: L.point(1062, 733) },
+  portrait:  { results: L.point(733, 790), noResults: L.point(733, 1062) },
+  landscape: { results: L.point(1062, 460), noResults: L.point(1062, 733) },
 };
 
 // Injected <style> for dynamic @page orientation + optional results suppression
