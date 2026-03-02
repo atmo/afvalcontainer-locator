@@ -58,6 +58,19 @@ function updateCacheInfo() {
   el.innerHTML = dateStr ? t(key, { date: dateStr }) : '';
 }
 
+/** Shows an adapter-specific note below the type selector, or hides it if none. */
+function updateAdapterNote() {
+  const el = document.getElementById('adapter-note');
+  if (!el) return;
+  const note = currentAdapter.note;
+  if (note) {
+    el.textContent = note[currentLang] || note.en;
+    el.hidden = false;
+  } else {
+    el.hidden = true;
+  }
+}
+
 /** Updates the sidebar data-credit text from the current adapter. */
 function updateDataCredit() {
   const el = document.querySelector('.data-credit');
@@ -82,6 +95,7 @@ document.addEventListener('langchange', () => {
   populateCitySelect();
   populateTypeSelect();
   updateDataCredit();
+  updateAdapterNote();
   updateCacheInfo();
   updateInstruction();
 });
@@ -665,6 +679,7 @@ window.setCity = function (adapterId) {
   clusterGroups = initClusterGroups(map, FRACTIONS);
   populateTypeSelect();
   updateDataCredit();
+  updateAdapterNote();
   map.setView(adapter.center, adapter.zoom);
   loadAllContainers();
 };
