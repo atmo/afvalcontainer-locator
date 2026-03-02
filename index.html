@@ -117,13 +117,16 @@
 
   <!-- Print-only summary (hidden in browser, shown when printing) -->
   <div id="print-section">
-    <div class="print-header">
-      <div class="print-type-hero" id="print-type">—</div>
-      <div class="print-meta-row">
-        <span class="print-city" id="print-city"></span>
-        <span class="print-subtitle" data-i18n="printSubtitle">Dichtstbijzijnde containers</span>
-        <span class="print-date" id="print-date"></span>
-      </div>
+    <!-- Full-bleed colour band ≥20% of page height -->
+    <div class="print-banner">
+      <span class="print-banner-deco" id="print-banner-emoji" aria-hidden="true"></span>
+      <p class="print-tagline" data-i18n="printTagline">Gooi je afval niet op straat — de dichtstbijzijnde containers staan op loopafstand.</p>
+    </div>
+    <!-- Dark info bar: type · city · date -->
+    <div class="print-info-bar">
+      <span id="print-type">—</span>
+      <span id="print-city"></span>
+      <span id="print-date"></span>
     </div>
     <div id="print-results"></div>
     <p class="print-footer" data-i18n="printFooter">

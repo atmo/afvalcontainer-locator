@@ -594,12 +594,13 @@ async function fetchRoutesAndRender(containers) {
 
     // ── Print result (address filled in when resolved) ──
     printResults.insertAdjacentHTML('beforeend', `
-      <div class="print-result" style="border-left-color:${color}">
-        <div class="print-num" style="background:${color}">${i + 1}</div>
+      <div class="print-result">
+        <div class="print-num" style="color:${color}">${String(i + 1).padStart(2, '0')}</div>
         <div class="print-body">
           <div class="print-address" id="print-addr-${i}">…</div>
-          <div class="print-metrics">${distStr} · ${t('printWalkTime', { min: mins })}</div>
+          <div class="print-distance">${distStr}</div>
         </div>
+        <div class="print-time" style="color:${color}">${mins}<small>${t('printMinUnit')}</small></div>
       </div>
     `);
   });
@@ -616,6 +617,18 @@ async function fetchRoutesAndRender(containers) {
     currentLang === 'nl' ? 'nl-NL' : 'en-GB',
     { day: 'numeric', month: 'long', year: 'numeric' }
   );
+  document.getElementById('print-section').style.setProperty('--tagline-color', frac.color);
+  const decoEl = document.getElementById('print-banner-emoji');
+  if (decoEl) decoEl.textContent = frac.emoji;
+
+  const scale = PRINT_SCALES[containers.length] ?? PRINT_SCALES[5];
+  const pr = document.getElementById('print-results');
+  pr.style.setProperty('--pr-num',  scale.num  + 'px');
+  pr.style.setProperty('--pr-addr', scale.addr + 'px');
+  pr.style.setProperty('--pr-dist', scale.dist + 'px');
+  pr.style.setProperty('--pr-time', scale.time + 'px');
+  pr.style.setProperty('--pr-unit', scale.unit + 'px');
+  pr.style.setProperty('--pr-col',  scale.col  + 'px');
 
   // Fit map to show everything
   const layers = [...routePolylines.map(({ poly }) => poly), ...nearestMarkers];
@@ -727,10 +740,20 @@ let _printMapPx   = null;
 // A4 portrait  usable area: 210 mm − 2×8 mm margins = 194 mm ≈ 733 px wide
 //                           297 mm − 2×8 mm margins = 281 mm ≈ 1062 px tall
 // A4 landscape usable area: 297 mm − 2×8 mm = 1062 px wide, 210 mm − 2×8 mm = 733 px tall
-// "results" height subtracts ~270 px for the print-section strip (fits up to 5 result cards).
+// "results" budget: 56mm banner + info bar + 5 result rows (65px each) + footer ≈ 602px portrait / 533px landscape.
+// Typography scales for print result rows, keyed by number of candidates.
+// Values in px; defaults (N=3) match the CSS fallback values.
+const PRINT_SCALES = {
+  1: { num: 100, addr: 32, dist: 20, time: 68, unit: 16, col: 120 },
+  2: { num: 76,  addr: 26, dist: 16, time: 50, unit: 14, col: 94  },
+  3: { num: 51,  addr: 18, dist: 13, time: 33, unit: 12, col: 72  },
+  4: { num: 42,  addr: 16, dist: 12, time: 27, unit: 11, col: 60  },
+  5: { num: 36,  addr: 14, dist: 11, time: 23, unit: 10, col: 52  },
+};
+
 const PRINT_DIMS = {
-  portrait:  { results: L.point(733, 790), noResults: L.point(733, 1062) },
-  landscape: { results: L.point(1062, 460), noResults: L.point(1062, 733) },
+  portrait:  { results: L.point(733, 460), noResults: L.point(733, 1062) },
+  landscape: { results: L.point(1062, 200), noResults: L.point(1062, 733) },
 };
 
 // Injected <style> for dynamic @page orientation + optional results suppression
